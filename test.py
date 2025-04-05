@@ -15,3 +15,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+ADMIN_ID = 1854307576  

@@ -13,8 +13,7 @@ AIRTABLE_BASE_ID = "app8wCInTiHaT95Cq"
 AIRTABLE_TABLE_NAME = "Telegram Bot Users" 
 
 BOT_TOKEN = "7813479172:AAEVo-u3o9C7z7ZzEHu--kRu-GmhtEVej_k"  
-ADMIN_ID = 1854307576  
-ADMIN_ID2 = 500062278
+ADMIN_ID = 500062278
 # --- Conversation States ---
 ASK_NAME, ASK_PHONE = range(2)
 
