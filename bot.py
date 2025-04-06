@@ -1,4 +1,3 @@
-import json
 import logging
 import requests
 from telegram import Update, KeyboardButton, ReplyKeyboardMarkup
@@ -8,11 +7,11 @@ from telegram.ext import (
 )
 
 # --- Airtable Setup ---
-AIRTABLE_API_KEY = "pat5rcPyQjiGtqHJF.e878d10e1f84ea5244ca73d34993b8acc2c74c2abcfa7eb4cce0113b8dd5fecc"  # Replace with your Airtable API Key
+AIRTABLE_API_KEY = "pat5rcPyQjiGtqHJF.e878d10e1f84ea5244ca73d34993b8acc2c74c2abcfa7eb4cce0113b8dd5fecc"
 AIRTABLE_BASE_ID = "app8wCInTiHaT95Cq"  
 AIRTABLE_TABLE_NAME = "Telegram Bot Users" 
 
-BOT_TOKEN = "7813479172:AAEVo-u3o9C7z7ZzEHu--kRu-GmhtEVej_k"  
+BOT_TOKEN = "7813479172:AAEVo-u3o9C7z7ZzEHu--kRu-GmhtEVej_k"
 ADMIN_ID = 500062278
 # --- Conversation States ---
 ASK_NAME, ASK_PHONE = range(2)
@@ -22,7 +21,6 @@ users = {}
 
 # --- Airtable Save Function ---
 def save_to_airtable(name, phone, user_id, chat_id):
-    print(f"Saving to Airtable: Name: {name}, Phone: {phone}, User ID: {user_id}, Chat ID: {chat_id}")
     url = f"https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/{AIRTABLE_TABLE_NAME}"
     headers = {
         "Authorization": f"Bearer {AIRTABLE_API_KEY}",
