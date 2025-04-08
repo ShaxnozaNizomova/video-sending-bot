@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: telegram-bot
+    env: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: python bot.py
+    autoDeploy: true
+    envVars:
+      - key: BOT_TOKEN
+        value: 7813479172:AAEVo-u3o9C7z7ZzEHu--kRu-GmhtEVej_k
+      - key: ADMIN_ID
+        value: "1854307576"
+      - key: WEBHOOK_URL
+        value: https://your-bot.onrender.com
