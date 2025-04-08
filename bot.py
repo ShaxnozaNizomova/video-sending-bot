@@ -11,7 +11,8 @@ from user import user_handlers
 # Load tokens and secrets
 BOT_TOKEN = os.getenv("BOT_TOKEN", "7813479172:AAEVo-u3o9C7z7ZzEHu--kRu-GmhtEVej_k")
 ADMIN_ID = int(os.getenv("ADMIN_ID", "1854307576"))
-WEBHOOK_URL = os.getenv("WEBHOOK_URL", "https://your-domain.onrender.com")  # Replace with your actual URL or set in env
+WEBHOOK_URL = os.getenv("WEBHOOK_URL", "https://video-sending-bot.onrender.com")
+
 
 # Flask app for webhook
 app = Flask(__name__)
