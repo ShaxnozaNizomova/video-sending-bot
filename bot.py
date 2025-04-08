@@ -1,4 +1,5 @@
 import os
+import asyncio
 from flask import Flask, request
 from telegram import Update, Bot
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ConversationHandler, ContextTypes
@@ -37,12 +38,12 @@ async def webhook() -> str:
         return "ok", 200
 
 # Manual webhook setup route
-@app.route("/setwebhook", methods=["GET"])
-def setup_webhook():
-    bot = Bot(token=BOT_TOKEN)
-    full_url = f"{WEBHOOK_URL}/webhook/{BOT_TOKEN}"
-    bot.set_webhook(full_url)
-    return f"✅ Webhook set to {full_url}"
+def set_webhook():
+    bot = Bot(BOT_TOKEN)
+    url = os.getenv("WEBHOOK_URL")
+    if url:
+        full_url = f"{url}/webhook/{BOT_TOKEN}"
+        asyncio.run(bot.set_webhook(full_url))
 
 # Run the Flask app
 if __name__ == "__main__":
