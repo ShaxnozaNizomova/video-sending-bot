@@ -1,25 +1,30 @@
+import os
 import logging
 import requests
-import os
 from telegram import Update, KeyboardButton, ReplyKeyboardMarkup
 from telegram.ext import (
-    ApplicationBuilder, CommandHandler, MessageHandler,
-    filters, ContextTypes, ConversationHandler
+    ApplicationBuilder, CommandHandler, MessageHandler, ConversationHandler,
+    ContextTypes, filters
 )
+from aiohttp import web
 
-# --- Airtable Setup ---
+# --- ENV Variables ---
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 AIRTABLE_API_KEY = os.getenv("AIRTABLE_API_KEY")
 AIRTABLE_BASE_ID = os.getenv("AIRTABLE_BASE_ID")
 AIRTABLE_TABLE_NAME = os.getenv("AIRTABLE_TABLE_NAME")
 ADMIN_ID = 1854307576
-# --- Conversation States ---
+
+# --- Conversation states ---
 ASK_NAME, ASK_PHONE = range(2)
 
-# --- In-Memory User Storage ---
+# --- In-memory user storage ---
 users = {}
 
-# --- Airtable Save Function ---
+# --- Logging ---
+logging.basicConfig(level=logging.INFO)
+
+# --- Save to Airtable ---
 def save_to_airtable(name, phone, user_id, chat_id):
     url = f"https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/{AIRTABLE_TABLE_NAME}"
     headers = {
@@ -38,12 +43,11 @@ def save_to_airtable(name, phone, user_id, chat_id):
     if response.status_code != 200:
         logging.error(f"Airtable error: {response.text}")
 
-# --- Start Command ---
+# --- Bot Handlers ---
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("👋 Welcome! What's your name?")
     return ASK_NAME
 
-# --- Save Name ---
 async def ask_phone(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data['name'] = update.message.text
     button = KeyboardButton("📱 Share phone", request_contact=True)
@@ -51,7 +55,6 @@ async def ask_phone(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("Great! Now please share your phone number:", reply_markup=markup)
     return ASK_PHONE
 
-# --- Save Phone & Send Welcome Video ---
 async def save_user(update: Update, context: ContextTypes.DEFAULT_TYPE):
     contact = update.message.contact
     name = context.user_data['name']
@@ -71,7 +74,6 @@ async def save_user(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("🎬 Here's a welcome video:\nhttps://youtu.be/ESuE9Svil-Y?si=hIqYTOLjDCwxbDfy")
     return ConversationHandler.END
 
-# --- List Users (Admin Only) ---
 async def list_users(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.effective_user.id != ADMIN_ID:
         return await update.message.reply_text("⛔ Unauthorized!")
@@ -96,12 +98,11 @@ async def list_users(update: Update, context: ContextTypes.DEFAULT_TYPE):
         fields = rec["fields"]
         name = fields.get("Name", "N/A")
         phone = fields.get("Phone", "N/A")
-        chat_id = str(fields.get("Chat ID", "N/A"))  # Use Chat ID from Airtable record
+        chat_id = str(fields.get("Chat ID", "N/A"))
         reply += f"👤 {name}\n📱 {phone}\n💬 Chat ID: `{chat_id}`\n\n"
 
     await update.message.reply_text(reply, parse_mode="Markdown")
 
-# --- Admin Send Video ---
 async def send_video_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.effective_user.id != ADMIN_ID:
         return await update.message.reply_text("⛔ Unauthorized!")
@@ -118,16 +119,16 @@ async def send_video_command(update: Update, context: ContextTypes.DEFAULT_TYPE)
 
     await update.message.reply_text("✅ Video sent to all users.")
 
+# --- Webhook route ---
+async def webhook_handler(request):
+    data = await request.json()
+    await application.update_queue.put(Update.de_json(data, application.bot))
+    return web.Response()
+
 # --- Main ---
-import logging
-from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, ConversationHandler, filters
-
-def main():
-    # Set logging level to WARNING to suppress INFO logs
-    logging.basicConfig(level=logging.WARNING)  # This will suppress logs below WARNING level
-    logging.getLogger("httpx").setLevel(logging.WARNING)  # Specifically suppress INFO logs from httpx
-
-    app = ApplicationBuilder().token(BOT_TOKEN).build()
+async def main():
+    global application
+    application = ApplicationBuilder().token(BOT_TOKEN).build()
 
     conv = ConversationHandler(
         entry_points=[CommandHandler("start", start)],
@@ -138,10 +139,33 @@ def main():
         fallbacks=[]
     )
 
-    app.add_handler(conv)
-    app.add_handler(CommandHandler("sendvideo", send_video_command))
-    app.add_handler(CommandHandler("users", list_users))
-    app.run_polling()
+    application.add_handler(conv)
+    application.add_handler(CommandHandler("sendvideo", send_video_command))
+    application.add_handler(CommandHandler("users", list_users))
+
+    # Set webhook
+    domain = os.getenv("RAILWAY_STATIC_URL")  # You’ll set this later
+    if not domain:
+        raise Exception("RAILWAY_STATIC_URL not set")
+
+    await application.bot.set_webhook(f"{domain}/webhook")
+
+    # Start web server
+    app = web.Application()
+    app.router.add_post("/webhook", webhook_handler)
+    port = int(os.environ.get("PORT", 8000))
+    runner = web.AppRunner(app)
+    await runner.setup()
+    site = web.TCPSite(runner, "0.0.0.0", port)
+    await site.start()
+
+    logging.info("Bot started with webhook.")
+    await application.initialize()
+    await application.start()
+    await application.updater.start_polling()  # Optional fallback if needed
+
+    await application.updater.idle()
 
 if __name__ == "__main__":
-    main()
+    import asyncio
+    asyncio.run(main())
