@@ -1,5 +1,6 @@
 import logging
 import requests
+import os
 from telegram import Update, KeyboardButton, ReplyKeyboardMarkup
 from telegram.ext import (
     ApplicationBuilder, CommandHandler, MessageHandler,
@@ -7,12 +8,11 @@ from telegram.ext import (
 )
 
 # --- Airtable Setup ---
-AIRTABLE_API_KEY = "pat5rcPyQjiGtqHJF.e878d10e1f84ea5244ca73d34993b8acc2c74c2abcfa7eb4cce0113b8dd5fecc"
-AIRTABLE_BASE_ID = "app8wCInTiHaT95Cq"  
-AIRTABLE_TABLE_NAME = "Telegram Bot Users" 
-
-BOT_TOKEN = "7813479172:AAEVo-u3o9C7z7ZzEHu--kRu-GmhtEVej_k"
-ADMIN_ID = 500062278
+BOT_TOKEN = os.getenv("BOT_TOKEN")
+AIRTABLE_API_KEY = os.getenv("AIRTABLE_API_KEY")
+AIRTABLE_BASE_ID = os.getenv("AIRTABLE_BASE_ID")
+AIRTABLE_TABLE_NAME = os.getenv("AIRTABLE_TABLE_NAME")
+ADMIN_ID = 1854307576
 # --- Conversation States ---
 ASK_NAME, ASK_PHONE = range(2)
 
@@ -145,4 +145,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
