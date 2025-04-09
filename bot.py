@@ -1,49 +1,41 @@
 import os
-import asyncio
 from flask import Flask, request
-from telegram import Update, Bot
-from telegram.ext import Application, CommandHandler, MessageHandler, filters, ConversationHandler, ContextTypes
-import logging
+from telegram import Update
+from telegram.ext import Application, CommandHandler, ContextTypes
 
-from admin import admin_handlers
-from user import user_handlers
+# Get secrets from environment variables
+BOT_TOKEN = os.getenv("BOT_TOKEN")
+ADMIN_ID = int(os.getenv("ADMIN_ID", "1854307576"))  # Replace with real fallback
+WEBHOOK_URL = os.getenv("WEBHOOK_URL")  # Should be like https://your-bot.onrender.com
 
-# Load tokens and secrets
-BOT_TOKEN = os.getenv("BOT_TOKEN", "7813479172:AAEVo-u3o9C7z7ZzEHu--kRu-GmhtEVej_k")
-ADMIN_ID = int(os.getenv("ADMIN_ID", "1854307576"))
-WEBHOOK_URL = "https://video-sending-bot.onrender.com"  # Your actual Render domain
+if not BOT_TOKEN or not WEBHOOK_URL:
+    raise Exception("BOT_TOKEN and WEBHOOK_URL must be set in environment variables.")
 
-# Flask app for webhook
-app = Flask(__name__)
-
-# Enable logging
-logging.basicConfig(
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO
-)
-
-# Create the Application
+# Telegram app
 application = Application.builder().token(BOT_TOKEN).build()
 
-# Register user and admin handlers
-application.add_handler(user_handlers)
-for handler in admin_handlers:
-    application.add_handler(handler)
+# Flask app
+app = Flask(__name__)
 
-# Webhook route to receive updates from Telegram
+# Handlers
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text("Hello! Bot is running via webhook on Render!")
+
+application.add_handler(CommandHandler("start", start))
+
+# Webhook endpoint
 @app.route(f"/webhook/{BOT_TOKEN}", methods=["POST"])
 def webhook():
     update = Update.de_json(request.get_json(force=True), application.bot)
-    asyncio.run(application.process_update(update))
+    application.update_queue.put_nowait(update)
     return "ok", 200
 
-# Route to manually set webhook (optional)
-@app.route("/setwebhook", methods=["GET"])
-def set_webhook():
-    bot = Bot(BOT_TOKEN)
-    full_url = f"{WEBHOOK_URL}/webhook/{BOT_TOKEN}"
-    asyncio.run(bot.set_webhook(full_url))
-    return f"✅ Webhook set to {full_url}"
+# Set webhook once before first request
+@app.before_first_request
+def init_webhook():
+    print("Setting webhook...")
+    application.bot.set_webhook(url=f"{WEBHOOK_URL}/webhook/{BOT_TOKEN}")
 
-# Start the Flask server
+# Run Flask
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
+    app.run(host="0.0.0.0", port=int(os.getenv("PORT", 5000)))
