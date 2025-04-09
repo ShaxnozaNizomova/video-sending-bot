@@ -22,11 +22,14 @@ for handler in admin_handlers:
     application.add_handler(handler)
 
 # Flask route for Telegram webhook
-@app.route(f"/webhook/{BOT_TOKEN}", methods=["POST"])
-async def webhook() -> str:
-    update = Update.de_json(request.get_json(force=True), application.bot)
-    await application.process_update(update)
+@app.post(f"/webhook/{BOT_TOKEN}")
+async def webhook():
+    if request.method == "POST":
+        await application.initialize()  # ✅ Add this line
+        update = Update.de_json(request.get_json(force=True), application.bot)
+        await application.process_update(update)
     return "ok"
+
 
 # Set the webhook when the bot starts
 async def set_webhook():
