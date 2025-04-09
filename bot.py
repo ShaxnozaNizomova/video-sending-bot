@@ -1,41 +1,46 @@
 import os
+import logging
 from flask import Flask, request
 from telegram import Update
-from telegram.ext import Application, CommandHandler, ContextTypes
+from telegram.ext import Application, Dispatcher, CallbackContext
+from user import user_handlers
+from admin import admin_handlers
 
-# Get secrets from environment variables
-BOT_TOKEN = os.getenv("BOT_TOKEN")
-ADMIN_ID = int(os.getenv("ADMIN_ID", "1854307576"))  # Replace with real fallback
-WEBHOOK_URL = os.getenv("WEBHOOK_URL")  # Should be like https://your-bot.onrender.com
-
-if not BOT_TOKEN or not WEBHOOK_URL:
-    raise Exception("BOT_TOKEN and WEBHOOK_URL must be set in environment variables.")
-
-# Telegram app
-application = Application.builder().token(BOT_TOKEN).build()
+# Logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 # Flask app
 app = Flask(__name__)
 
-# Handlers
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("Hello! Bot is running via webhook on Render!")
+# Telegram bot token and other config from environment
+BOT_TOKEN = os.getenv("BOT_TOKEN")
+WEBHOOK_URL = os.getenv("WEBHOOK_URL")  # Full URL including your bot token
+ADMIN_ID = int(os.getenv("ADMIN_ID", "1854307576"))
 
-application.add_handler(CommandHandler("start", start))
+# Create the bot application
+application = Application.builder().token(BOT_TOKEN).build()
 
-# Webhook endpoint
+# Register handlers
+application.add_handler(user_handlers)
+for handler in admin_handlers:
+    application.add_handler(handler)
+
 @app.route(f"/webhook/{BOT_TOKEN}", methods=["POST"])
-def webhook():
+async def webhook():
+    """Handle incoming Telegram webhook updates."""
     update = Update.de_json(request.get_json(force=True), application.bot)
-    application.update_queue.put_nowait(update)
-    return "ok", 200
+    await application.process_update(update)
+    return "OK"
 
-# Set webhook once before first request
 @app.before_first_request
-def init_webhook():
-    print("Setting webhook...")
-    application.bot.set_webhook(url=f"{WEBHOOK_URL}/webhook/{BOT_TOKEN}")
+def set_webhook():
+    """Set webhook when the server starts."""
+    from telegram import Bot
+    bot = Bot(BOT_TOKEN)
+    bot.delete_webhook()
+    bot.set_webhook(url=f"{WEBHOOK_URL}/webhook/{BOT_TOKEN}")
+    logger.info("✅ Webhook set!")
 
-# Run Flask
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=int(os.getenv("PORT", 5000)))
+    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
