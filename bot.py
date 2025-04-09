@@ -2,7 +2,7 @@ import os
 import asyncio
 from flask import Flask, request
 from telegram import Update
-from telegram.ext import Application, ContextTypes
+from telegram.ext import Application
 from user import user_handlers
 from admin import admin_handlers
 
@@ -11,7 +11,7 @@ BOT_TOKEN = os.getenv("BOT_TOKEN")
 WEBHOOK_URL = os.getenv("WEBHOOK_URL")
 ADMIN_ID = int(os.getenv("ADMIN_ID", "1854307576"))
 
-# Create Flask app and Telegram app
+# Create Flask app and Telegram Application
 app = Flask(__name__)
 application: Application = Application.builder().token(BOT_TOKEN).build()
 
@@ -20,11 +20,11 @@ application.add_handler(user_handlers)
 for handler in admin_handlers:
     application.add_handler(handler)
 
-# Ensure init runs once
+# Flag for one-time initialization
 initialized = False
 init_lock = asyncio.Lock()
 
-# Webhook route
+# Webhook endpoint
 @app.post(f"/webhook/{BOT_TOKEN}")
 async def webhook():
     global initialized
@@ -37,17 +37,12 @@ async def webhook():
     await application.process_update(update)
     return "ok"
 
-# Async webhook setup function
-async def set_webhook():
+# Webhook setup for Flask 3.x (async)
+@app.before_serving
+async def setup_webhook():
     await application.bot.set_webhook(url=f"{WEBHOOK_URL}/webhook/{BOT_TOKEN}")
-    print("Webhook set!")
+    print("✅ Webhook set successfully.")
 
-# Flask startup hook to set webhook
-@app.before_first_request
-def activate_webhook():
-    loop = asyncio.get_event_loop()
-    loop.create_task(set_webhook())
-
-# Run the app
+# Run app
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
