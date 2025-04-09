@@ -26,17 +26,23 @@ async def send_video(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not context.args:
         await update.message.reply_text("Please send the YouTube or Telegram video link after /sendvideo")
         return
+
     video_link = context.args[0]
     url = f"https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/{AIRTABLE_TABLE_NAME}"
     headers = {"Authorization": f"Bearer {AIRTABLE_API_KEY}"}
     res = requests.get(url, headers=headers).json()
+
     for r in res.get("records", []):
-        chat_id = r["fields"].get("Chat ID")
+        fields = r["fields"]
+        chat_id = fields.get("Chat ID")
+        name = fields.get("Name", "there")
         if chat_id:
+            message = f"Hello, {name}! There is a new video for you: {video_link}"
             try:
-                await context.bot.send_message(chat_id=chat_id, text=video_link)
+                await context.bot.send_message(chat_id=chat_id, text=message)
             except Exception as e:
                 print(f"Failed to send to {chat_id}: {e}")
+
     await update.message.reply_text("✅ Video sent to all users.")
 
 admin_handlers = [
