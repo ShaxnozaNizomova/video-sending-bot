@@ -31,11 +31,10 @@ for handler in admin_handlers:
 
 # Webhook route to receive updates from Telegram
 @app.route(f"/webhook/{BOT_TOKEN}", methods=["POST"])
-async def webhook() -> str:
-    if request.method == "POST":
-        update = Update.de_json(request.get_json(force=True), application.bot)
-        await application.process_update(update)
-        return "ok", 200
+def webhook():
+    update = Update.de_json(request.get_json(force=True), application.bot)
+    asyncio.run(application.process_update(update))
+    return "ok", 200
 
 # Route to manually set webhook (optional)
 @app.route("/setwebhook", methods=["GET"])
