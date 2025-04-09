@@ -25,7 +25,7 @@ def save_to_airtable(name, phone, user_id, chat_id):
         }
     }
     requests.post(url, json=data, headers=headers)
-
+    
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("Welcome! Please enter your full name:")
     return ASK_NAME
