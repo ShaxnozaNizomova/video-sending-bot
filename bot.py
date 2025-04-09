@@ -2,7 +2,7 @@ import os
 import logging
 from flask import Flask, request
 from telegram import Update
-from telegram.ext import Application, Dispatcher, CallbackContext
+from telegram.ext import Application, CallbackContext
 from user import user_handlers
 from admin import admin_handlers
 
