@@ -9,7 +9,7 @@ from admin import admin_handlers
 # Environment variables
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 WEBHOOK_URL = os.getenv("WEBHOOK_URL")
-ADMIN_ID = int(os.getenv("ADMIN_ID", "1854307576"))
+ADMIN_ID = int(os.getenv("ADMIN_ID", "500062278"))
 
 # Create Quart app
 app = Quart(__name__)

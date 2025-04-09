@@ -3,7 +3,7 @@ from telegram.ext import CommandHandler, MessageHandler, filters, ContextTypes
 import requests
 import os
 
-ADMIN_ID = int(os.getenv("ADMIN_ID", "1854307576"))
+ADMIN_ID = int(os.getenv("ADMIN_ID", "500062278"))
 AIRTABLE_API_KEY = os.getenv("AIRTABLE_API_KEY", "pat5rcPyQjiGtqHJF.e878d10e1f84ea5244ca73d34993b8acc2c74c2abcfa7eb4cce0113b8dd5fecc")
 AIRTABLE_BASE_ID = os.getenv("AIRTABLE_BASE_ID", "app8wCInTiHaT95Cq")
 AIRTABLE_TABLE_NAME = os.getenv("AIRTABLE_TABLE_NAME", "Telegram Bot Users")
